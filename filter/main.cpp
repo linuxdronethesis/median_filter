@@ -38,19 +38,27 @@ int main(int argc, char *argv[])
     }
 
     /* Lock the surface */
+
+    int fenetre = 0;
+    printf("indiquez la taille de la fenêtre : ");
+    scanf("%d", &fenetre);
+    //printf("\nfenetre : %d\n",fenetre);
+    int tailletableau = ((fenetre*2)+1)*((fenetre*2)+1);
+    //printf("taille tableau : %d\n",tailletableau);
+
     SDL_LockSurface(image);
-    for (x = 1 ; x < w ; x++)
+    for (x = fenetre ; x <= w-fenetre ; x++)
     {
-        for (y = 1 ; y < h ; y++)
+        for (y = fenetre ; y <= h-fenetre ; y++)
         {
-            Uint8 tableau[9];
+            Uint8 tableau[tailletableau];
             int t = 0;
             int i;
             int j;
 
-            for (i = x-1 ; i <= x+1 ; i++)
+            for (i = x-fenetre ; i <= x+fenetre ; i++)
             {
-                for (j = y-1; j <= y+1 ; j++)
+                for (j = y-fenetre; j <= y+fenetre ; j++)
                 {
                     Uint8 * pixel = (Uint8*)image->pixels;
                     if(fmt->BitsPerPixel==8){
@@ -74,7 +82,7 @@ int main(int argc, char *argv[])
                 }
             }
             Uint8 new_pixel;
-            new_pixel = median(tableau,9);
+            new_pixel = median(tableau,tailletableau);
             PutPixel_nolock(image,x,y, new_pixel,bit);
             /*
             if (x==500 && y==500)
@@ -115,6 +123,8 @@ int main(int argc, char *argv[])
     //printf("Pixel Color -> R: %d,  G: %d,  B: %d\n", red, green, blue);
     //printf("pixel %d", pixel);
 
+    /*
+
     SDL_Surface *ecran = NULL;
     SDL_Rect positionFond;
 
@@ -130,6 +140,11 @@ int main(int argc, char *argv[])
     SDL_Flip(ecran);
     pause();
 
+    */
+
+    SDL_SaveBMP(image,"output.bmp");
+    //IMG_SavePNG(image,"output.png"); je voulais utiliser cette ligne mais pour une raison qui m'échappe j'ai une erreur disant que la méthode n'est pas définie alors que'elle est bien présente dans le header de la librairie que j'importe
+
     SDL_FreeSurface(image);
     SDL_Quit();
 
@@ -144,7 +159,7 @@ Uint8 median(Uint8 tableau[], int taille)
     {
         a[b] = tableau[b];
     }
-    int i,j;
+    //int i,j;
     for (int i = 0; i < taille; i++)                     //Loop for ascending ordering
 	{
 		for (int j = 0; j < taille; j++)             //Loop for comparing other values
@@ -157,7 +172,8 @@ Uint8 median(Uint8 tableau[], int taille)
 			}
 		}
 	}
-	return a[4];
+	//printf("taille/2 : %d\n",taille/2);
+	return a[taille/2];
 }
 
 void PutPixel_nolock(SDL_Surface * surface, int x, int y, Uint8 color,int b)
@@ -165,9 +181,11 @@ void PutPixel_nolock(SDL_Surface * surface, int x, int y, Uint8 color,int b)
     Uint8 * pixel = (Uint8*)surface->pixels;
     if(b==8){
         pixel += (x * surface->pitch) + (y * sizeof(Uint8));
+        *pixel = color & 0xFF;
         }
     else if (b==16){
         pixel += (x * surface->pitch) + (y * sizeof(Uint16));
+        *((Uint16*)pixel) = color & 0xFFFF;
         }
     else if (b==24){
         pixel += (y * surface->pitch) + (x * sizeof(Uint8)*3);
@@ -175,6 +193,7 @@ void PutPixel_nolock(SDL_Surface * surface, int x, int y, Uint8 color,int b)
     }
     else if (b==32){
         pixel += (x * surface->pitch) + (y * sizeof(Uint32));
+        *((Uint32*)pixel) = color;
     }
 }
 
