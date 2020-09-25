@@ -15,7 +15,7 @@
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
-					<Add library="SDL_image" />
+					<Add library="../SDL2-2.0.12/i686-w64-mingw32/lib/SDL2_image.lib" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -32,11 +32,12 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="`sdl-config --cflags`" />
 			<Add option="-Wall" />
+			<Add option="`sdl-config --cflags`" />
 		</Compiler>
 		<Linker>
 			<Add option="`sdl-config --libs`" />
+			<Add library="SDL_image" />
 		</Linker>
 		<Unit filename="cb.bmp" />
 		<Unit filename="main.cpp" />

@@ -3,27 +3,36 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h> /* Inclusion du header de SDL_image (adapter le dossier au besoin) */
 
-Uint8 median(Uint8 *tableau, int tailletableau);
-void PutPixel_nolock(SDL_Surface * surface, int x, int y, Uint8 color, int b);
-void pause();
+Uint8 median8(Uint8 *tableau, int tailletableau);
+Uint8 median16(Uint16 *tableau, int tailletableau);
+Uint8 median24(Uint32 *tableau, int tailletableau);
+Uint8 median32(Uint32 *tableau, int tailletableau);
+
+void PutPixel8_nolock(SDL_Surface * surface, int x, int y, Uint8 color);
+void PutPixel16_nolock(SDL_Surface * surface, int x, int y, Uint16 color);
+void PutPixel24_nolock(SDL_Surface * surface, int x, int y, Uint32 color);
+void PutPixel32_nolock(SDL_Surface * surface, int x, int y, Uint32 color);
 
 int main(int argc, char *argv[])
 {
-    SDL_Surface *image = NULL;
+    SDL_Surface *original_image = NULL;
+    SDL_Surface *new_image = NULL;
     SDL_PixelFormat *fmt;
     //Uint32 temp, pixel;
     //Uint8 red, green, blue;
     int w,h;
     int x,y;
 
-    image = IMG_Load("Medianfilterp.png");
-    fmt=image->format;
-    w = image->w;
-    h = image->h;
+    original_image = IMG_Load("Median_filter_example.jpg");
+    new_image = IMG_Load("Median_filter_example.jpg");
+    fmt=original_image->format;
+    w = original_image->w;
+    h = original_image->h;
+
     //printf("width : %d height : %d\n", w,h);
     int bit = 0;
 
-
+    /*
     if(fmt->BitsPerPixel==8){
         fprintf(stderr, "8-bit surface.\n");
 
@@ -35,7 +44,7 @@ int main(int argc, char *argv[])
 
     }else if (fmt->BitsPerPixel==32){
         fprintf(stderr, "32-bit surface.\n");
-    }
+    }*/
 
     /* Lock the surface */
 
@@ -46,44 +55,32 @@ int main(int argc, char *argv[])
     int tailletableau = ((fenetre*2)+1)*((fenetre*2)+1);
     //printf("taille tableau : %d\n",tailletableau);
 
-    SDL_LockSurface(image);
-    for (x = fenetre ; x <= w-fenetre ; x++)
-    {
-        for (y = fenetre ; y <= h-fenetre ; y++)
+    SDL_LockSurface(original_image);
+    SDL_LockSurface(new_image);
+    if(fmt->BitsPerPixel==8){
+        for (x = fenetre ; x <= w-fenetre ; x++)
         {
-            Uint8 tableau[tailletableau];
-            int t = 0;
-            int i;
-            int j;
-
-            for (i = x-fenetre ; i <= x+fenetre ; i++)
+            for (y = fenetre ; y <= h-fenetre ; y++)
             {
-                for (j = y-fenetre; j <= y+fenetre ; j++)
+                Uint8 tableau[tailletableau];
+
+                int t = 0;
+                int i;
+                int j;
+
+                for (i = x-fenetre ; i <= x+fenetre ; i++)
                 {
-                    Uint8 * pixel = (Uint8*)image->pixels;
-                    if(fmt->BitsPerPixel==8){
-                        pixel += (j * image->pitch) + (i * sizeof(Uint8));
-                        bit = 8;
-                        }
-                    else if (fmt->BitsPerPixel==16){
-                        pixel += (j * image->pitch) + (i * sizeof(Uint16));
-                        bit = 16;
+                    for (j = y-fenetre; j <= y+fenetre ; j++)
+                    {
+                        Uint8 * pixel = (Uint8*)original_image->pixels;
+                        pixel += (j * original_image->pitch) + (i * sizeof(Uint8));
+                        tableau[t] = *pixel;
+                        t+=1;
                     }
-                    else if (fmt->BitsPerPixel==24){
-                        pixel += (j * image->pitch) + (i * sizeof(Uint8)*3);
-                        bit = 24;
-                    }
-                    else if (fmt->BitsPerPixel==32){
-                        pixel += (j * image->pitch) + (i * sizeof(Uint32));
-                        bit = 32;
-                    }
-                    tableau[t] = *pixel;
-                    t+=1;
                 }
-            }
-            Uint8 new_pixel;
-            new_pixel = median(tableau,tailletableau);
-            PutPixel_nolock(image,x,y, new_pixel,bit);
+                Uint8 new_pixel;
+                new_pixel = median8(tableau,tailletableau);
+                PutPixel8_nolock(new_image,x,y, new_pixel);
             /*
             if (x==500 && y==500)
             {
@@ -98,9 +95,11 @@ int main(int argc, char *argv[])
             }*/
             }
     }
+    }
 
     //pixel = *((Uint32*)image->pixels);
-    SDL_UnlockSurface(image);
+    SDL_UnlockSurface(original_image);
+    SDL_UnlockSurface(new_image);
 
     /* Get Red component */
     //temp = pixel & fmt->Rmask;  /* Isolate red component */
@@ -142,16 +141,17 @@ int main(int argc, char *argv[])
 
     */
 
-    SDL_SaveBMP(image,"output.bmp");
+    SDL_SaveBMP(new_image,"output.bmp");
     //IMG_SavePNG(image,"output.png"); je voulais utiliser cette ligne mais pour une raison qui m'échappe j'ai une erreur disant que la méthode n'est pas définie alors que'elle est bien présente dans le header de la librairie que j'importe
 
-    SDL_FreeSurface(image);
+    SDL_FreeSurface(original_image);
+    SDL_FreeSurface(new_image);
     SDL_Quit();
 
     return EXIT_SUCCESS;
 }
 
-Uint8 median(Uint8 tableau[], int taille)
+Uint8 median8(Uint8 tableau[], int taille)
 {
     Uint8 a[taille];
     int b;
@@ -176,39 +176,105 @@ Uint8 median(Uint8 tableau[], int taille)
 	return a[taille/2];
 }
 
-void PutPixel_nolock(SDL_Surface * surface, int x, int y, Uint8 color,int b)
+Uint8 median16(Uint16 tableau[], int taille)
 {
-    Uint8 * pixel = (Uint8*)surface->pixels;
-    if(b==8){
-        pixel += (x * surface->pitch) + (y * sizeof(Uint8));
-        *pixel = color & 0xFF;
-        }
-    else if (b==16){
-        pixel += (x * surface->pitch) + (y * sizeof(Uint16));
-        *((Uint16*)pixel) = color & 0xFFFF;
-        }
-    else if (b==24){
-        pixel += (y * surface->pitch) + (x * sizeof(Uint8)*3);
-        *((Uint8*)pixel) = color;
+    Uint16 a[taille];
+    int b;
+    for(b = 0; b < taille ; b++)
+    {
+        a[b] = tableau[b];
     }
-    else if (b==32){
-        pixel += (x * surface->pitch) + (y * sizeof(Uint32));
-        *((Uint32*)pixel) = color;
-    }
+    //int i,j;
+    for (int i = 0; i < taille; i++)                     //Loop for ascending ordering
+	{
+		for (int j = 0; j < taille; j++)             //Loop for comparing other values
+		{
+			if (a[j] > a[i])                //Comparing other array elements
+			{
+				int tmp = a[i];         //Using temporary variable for storing last value
+				a[i] = a[j];            //replacing value
+				a[j] = tmp;             //storing last value
+			}
+		}
+	}
+	//printf("taille/2 : %d\n",taille/2);
+	return a[taille/2];
 }
 
-void pause()
+Uint8 median24(Uint32 tableau[], int taille)
 {
-    int continuer = 1;
-    SDL_Event event;
-
-    while (continuer)
+    Uint32 a[taille];
+    int b;
+    for(b = 0; b < taille ; b++)
     {
-        SDL_WaitEvent(&event);
-        switch(event.type)
-        {
-            case SDL_QUIT:
-                continuer = 0;
-        }
+        a[b] = tableau[b];
     }
+    //int i,j;
+    for (int i = 0; i < taille; i++)                     //Loop for ascending ordering
+	{
+		for (int j = 0; j < taille; j++)             //Loop for comparing other values
+		{
+			if (a[j] > a[i])                //Comparing other array elements
+			{
+				int tmp = a[i];         //Using temporary variable for storing last value
+				a[i] = a[j];            //replacing value
+				a[j] = tmp;             //storing last value
+			}
+		}
+	}
+	//printf("taille/2 : %d\n",taille/2);
+	return a[taille/2];
+}
+
+Uint8 median32(Uint32 tableau[], int taille)
+{
+    Uint32 a[taille];
+    int b;
+    for(b = 0; b < taille ; b++)
+    {
+        a[b] = tableau[b];
+    }
+    //int i,j;
+    for (int i = 0; i < taille; i++)                     //Loop for ascending ordering
+	{
+		for (int j = 0; j < taille; j++)             //Loop for comparing other values
+		{
+			if (a[j] > a[i])                //Comparing other array elements
+			{
+				int tmp = a[i];         //Using temporary variable for storing last value
+				a[i] = a[j];            //replacing value
+				a[j] = tmp;             //storing last value
+			}
+		}
+	}
+	//printf("taille/2 : %d\n",taille/2);
+	return a[taille/2];
+}
+
+void PutPixel8_nolock(SDL_Surface * surface, int x, int y, Uint8 color)
+{
+    Uint8 * pixel = (Uint8*)surface->pixels;
+    pixel += (x * surface->pitch) + (y * sizeof(Uint8));
+    *pixel = color;
+}
+
+void PutPixel16_nolock(SDL_Surface * surface, int x, int y, Uint16 color)
+{
+    Uint16 * pixel = (Uint16*)surface->pixels;
+    pixel += (x * surface->pitch) + (y * sizeof(Uint16));
+    *pixel = color;
+}
+
+void PutPixel24_nolock(SDL_Surface * surface, int x, int y, Uint32 color)
+{
+    Uint32 * pixel = (Uint32*)surface->pixels;
+    pixel += (x * surface->pitch) + (y * sizeof(Uint8)*3);
+    *pixel = color;
+}
+
+void PutPixel32_nolock(SDL_Surface * surface, int x, int y, Uint32 color)
+{
+    Uint32 * pixel = (Uint32*)surface->pixels;
+    pixel += (x * surface->pitch) + (y * sizeof(Uint32));
+    *pixel = color;
 }
