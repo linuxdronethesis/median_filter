@@ -23,14 +23,13 @@ int main(int argc, char *argv[])
     int w,h;
     int x,y;
 
-    original_image = IMG_Load("Median_filter_example.jpg");
-    new_image = IMG_Load("Median_filter_example.jpg");
+    original_image = IMG_Load("Medianfilterp.png");
+    new_image = IMG_Load("Medianfilterp.png");
     fmt=original_image->format;
     w = original_image->w;
     h = original_image->h;
 
     //printf("width : %d height : %d\n", w,h);
-    int bit = 0;
 
     /*
     if(fmt->BitsPerPixel==8){
@@ -254,7 +253,7 @@ Uint8 median32(Uint32 tableau[], int taille)
 void PutPixel8_nolock(SDL_Surface * surface, int x, int y, Uint8 color)
 {
     Uint8 * pixel = (Uint8*)surface->pixels;
-    pixel += (x * surface->pitch) + (y * sizeof(Uint8));
+    pixel += (y * surface->pitch) + (x * sizeof(Uint8));
     *pixel = color;
 }
 
