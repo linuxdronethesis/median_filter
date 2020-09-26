@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
             }*/
             }
     }
-    }/*
+    }
     if(fmt->BitsPerPixel==32){
         for (x = fenetre ; x <= w-fenetre ; x++)
         {
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
                 for (i = x-fenetre ; i <= x+fenetre ; i++)
                 {
                     for (j = y-fenetre; j <= y+fenetre ; j++)
-
+                    {
                         Uint32 * pixel = (Uint32*)original_image->pixels;
                         pixel += (j * original_image->pitch) + (i * sizeof(Uint32));
                         tableau[t] = *pixel;
@@ -205,10 +205,9 @@ int main(int argc, char *argv[])
                 Uint32 new_pixel;
                 new_pixel = median32(tableau,tailletableau);
                 PutPixel32_nolock(new_image,x,y, new_pixel);
-
             }
     }
-    }*/
+    }
 
     //pixel = *((Uint32*)image->pixels);
     SDL_UnlockSurface(original_image);
